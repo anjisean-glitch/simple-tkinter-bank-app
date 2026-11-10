@@ -21,7 +21,7 @@ class Bank:
 
     ## sub text
     self.text_lbl = ctk.CTkLabel(self.root, text="Let's set up your account!!", font=("Arial", 20, "bold"), fg_color="#130475", text_color="white", underline=5)
-    self.title_lbl.pack(padx=5, pady=10)
+    self.text_lbl.pack(padx=5, pady=10)
     ############
     
     
