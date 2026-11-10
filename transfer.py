@@ -75,26 +75,41 @@ class Bank:
 
   ## transfer function ########################
   def transfer(self):
+
+    ## this assigns variables to the value gotten from the transfer amount entry and the receiver's entry
     transfer_amt = self.transfer_amt.get().strip()
     receiver = self.receiver_acc_ent.get().strip()
 
+    ## checks if those variables are empty
     if not transfer_amt and not receiver:
       CTkMessagebox(title="Error", message="Please fill all the space")
 
+    ## checks if transfer amount is a number
     elif not transfer_amt.isdigit():
       CTkMessagebox(title="Error", message="Transfer amount must be numerical values!")
 
+    ## checks if transfer amount is lower than 100
     elif float(transfer_amt) <100:
       CTkMessagebox(title="Error", message="Transfer amount must be higher than 100!")
-    
+
+    ## checks if transfer amount is lower than 0
+    elif float(transfer_amt) <0:
+      CTkMessagebox(title="Error", message="Withdrawal amount must be greater than 0!")
+
+    ## checks if transfer amount is higher than original amount
     elif float(transfer_amt) > float(amount):
       CTkMessagebox(title="Error", message="Insufficient Balance! \nYou can't make this transaction")
 
     else:
+
+      ## if everything is ok, it runs this
       try:
+
+        ## connects to the bank.db and creates cursor
         con = sqlite3.connect('bank.db')
         cur = con.cursor()
 
+        ## writing a query to get receiver's data
         cur.execute("""SELECT * 
                     FROM users
                     WHERE username LIKE ?
@@ -103,36 +118,33 @@ class Bank:
         con.commit()
        
 
-
+        ## assigns a result variable to the query result
         result = cur.fetchone()
-        receiver_og_amount = result[4]  
 
-       
+        ## but if result is none, it means that the account does not exist
+        if result is None:
+          CTkMessagebox(title="Error", message="The reciever inputted doesn't exist")
 
-        if result:
+        ## but if it exists, it runs this
+        else:
+
+          ## now it stores the receiver's og amount into a variable
+          receiver_og_amount = result[4]  
+
+          ## it then try's the following
           try:
-            con = sqlite3.connect('bank.db')
-            print("Connection created")
-            
-            cur = con.cursor()
-            print("Cursor created")
-            
 
-
+            ## runs an execution to update the sender's amount, it subtracts the transfer amount
             cur.execute('''UPDATE users SET amount = ?
                         WHERE username = ?''',(float(amount) - float(transfer_amt), username))
             print("DEDUCTION successful")
 
-            con.commit()
-            print(" COMMIT OF DEDUCT successful")
-
+            ## runs an execution to update the receiver's amount, it adds the transfer amount
             cur.execute('''UPDATE users SET amount = ?
                         WHERE username = ?
                         or email = ?''',(float(receiver_og_amount) + float(transfer_amt), receiver, receiver))
 
-
-            con.commit()
-
+            ## it writes a query to get sender's data
             cur.execute("""SELECT * 
                         FROM users
                         WHERE username LIKE ?
@@ -140,19 +152,25 @@ class Bank:
                         (username,email))
             con.commit()
             
-
+            ## it stores the updated amount inside a variable
+            ## it uses self so that i can access it anywhere outside this function
             self.new_balance = cur.fetchone()[4]
             con.close()
             print("Balance retrieved")
 
+            ## message pop-up showing successful transaction
             msg = CTkMessagebox(title="Info", message=f"You have successfully transferred ${transfer_amt} to {receiver}! \nCurrent Balance: ${self.new_balance}", icon="info")
             msg.get()
-    
+
+            ## runs the back function
             self.back()
 
+          ## if the internal try function fails, it rolls it back then display's message
           except Exception as e:
+            con.rollback()
             CTkMessagebox(title="Error", message=str(e))
 
+      ## also display's message if something occurs
       except Exception as e:
             CTkMessagebox(title="Error", message=str(e))
 
